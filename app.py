@@ -1,5 +1,6 @@
 import requests
 from fastapi import FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
 from langchain_google_genai import ChatGoogleGenerativeAI
 from dotenv import load_dotenv
 import os
@@ -10,8 +11,18 @@ GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 
 app = FastAPI()
 
+origins = ["http://localhost", "*"]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 llm = ChatGoogleGenerativeAI(
-    model="gemini-1.5-pro",
+    model="gemini-1.5-flash",
     temperature=0,
     max_tokens=None,
     timeout=None,
@@ -78,7 +89,7 @@ def get_github_data(owner, repo, date):
 async def github_updates(owner: str, repo: str, date: str):
     try:
         github_data = get_github_data(owner, repo, date)
-        explanation_prompt = f"Explain in plain english: from GitHub response give me (project manager) the updates :\n{github_data}"
+        explanation_prompt = f"As a Project Manager, please provide a summary of the GitHub updates. Make sure to clearly explain the commits and issues, with the date and time adjusted to the +8 GMT timezone. Below is the raw GitHub data :\n{github_data}"
         explanation = llm.invoke(explanation_prompt)
         return {"explanation": explanation.content}
     except HTTPException as e:
