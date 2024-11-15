@@ -30,6 +30,9 @@ llm = ChatGoogleGenerativeAI(
     api_key=GEMINI_API_KEY
 )
 
+# Initialize chat history
+chat_history = []
+
 def create_graphql_query(owner, repo, date):
     return f"""
     query RepositoryActivities {{
@@ -96,3 +99,11 @@ async def github_updates(owner: str, repo: str, date: str):
         raise e
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/chat/")
+async def chat(message: str):
+    global chat_history
+    chat_history.append({"role": "user", "content": message})
+    response = llm.invoke(chat_history)
+    chat_history.append({"role": "assistant", "content": response.content})
+    return {"response": response.content}
